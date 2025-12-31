@@ -10,6 +10,7 @@
 .section  .text.startup
 .balign 4
 .globl  _start
+.type   _start, %function
 _start:
   /* Clear registers                                                          */
   mov   r0,   #0
