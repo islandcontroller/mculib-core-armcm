@@ -4,6 +4,44 @@
 .thumb
 
 /******************************************************************************
+ * Macro definitions
+ ******************************************************************************/
+/* Clear SRAM section
+ * start: section start marker
+ * end: section end marker                                                    */
+.macro  clr_sec start, end
+  ldr   r0,   =\start                 /* Section start address and cursor     */
+  ldr   r1,   =\end                   /* Section end address                  */
+  movs  r3,   #0                      /* Fill pattern                         */
+1:
+  cmp   r0,   r1                      /* Loop until cursor reaches end marker */
+  bge   2f                            /* Done                                 */
+  str   r3,   [r0]                    /* Store fill pattern at cursor         */
+  adds  r0,   r0,   #4                /* Increment cursor                     */
+  b     1b                            /* Loop                                 */
+2:
+.endm
+
+/* Load SRAM section from LMA
+ * start: section start marker
+ * end: section end marker
+ * src: load address marker                                                   */
+.macro  ld_sec  start, end, src
+  ldr   r0,   =\start                 /* Sec. start address and write cursor  */
+  ldr   r1,   =\end                   /* Section end address                  */
+  ldr   r2,   =\src                   /* Load data address and read cursor    */
+1:
+  cmp   r0,   r1                      /* Loop until write cursor reaches end  */
+  bge   2f                            /* Done                                 */
+  ldr   r3,   [r2]                    /* Load word from read cursor           */
+  str   r3,   [r0]                    /* Store word at write cursor           */
+  adds  r0,   r0,   #4                /* Increment cursors                    */
+  adds  r2,   r2,   #4                /* -"-                                  */
+  b     1b                            /* Loop                                 */
+2:
+.endm
+
+/******************************************************************************
  * _start
  * Reset handler
  ******************************************************************************/
@@ -28,37 +66,15 @@ _start:
   mov   r12,  r0                      /* -"- */
   /* skip sp, lr, pc */
 
-/* Initialise memory sections                                                 */
-__crt0_clear_bss:
-  ldr   r0,   =_sbss                  /* Start of .bss section                */
-  ldr   r1,   =_ebss                  /* End of .bss section                  */
-  movs  r4,   #0                      /* Fill value                           */
-__crt0_clear_bss_loop:
-  cmp   r0,   r1
-  bge   __crt0_copy_data              /* Done or skip if no .bss present      */
-  str   r4,   [r0]
-  adds  r0,   r0,   #4                /* Word-wise increment of write addr    */
-  b     __crt0_clear_bss_loop
+  /* Initialise memory sections                                               */
+  clr_sec _sbss,  _ebss               /* .bss                                 */
+  ld_sec  _sdata, _edata, _sidata     /* .data                                */
 
-__crt0_copy_data:
-  ldr   r0,   =_sidata                /* Start LMA of .data section ("src")   */
-  ldr   r1,   =_sdata                 /* Start VMA of .data section ("dest")  */
-  ldr   r2,   =_edata                 /* End VMA of .data section             */
-__crt0_copy_data_loop:
-  cmp   r1,   r2
-  bge   _app_start                    /* Done or skip if no .data present     */
-  ldr   r4,   [r0]                    /* Load word from LMA                   */
-  str   r4,   [r1]                    /* Store word to VMA                    */
-  adds  r0,   r0,   #4                /* Word-wise pointer increment          */
-  adds  r1,   r1,   #4
-  b     __crt0_copy_data_loop
-
-/* Jump to main() function                                                    */
-_app_start:
+  /* Start application code                                                   */
   bl    SystemInit                    /* Core system init                     */
-__app_main_enter:
+
   movs  r0,   #0                      /* argc = 0                             */
   movs  r1,   #0                      /* argv = NULL                          */
   bl    main                          /* Call main() with return address      */
-__app_main_exit:
-  b     __app_main_exit               /* Endless loop                         */
+1:
+  b     1b                            /* Endless loop                         */
