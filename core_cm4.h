@@ -703,6 +703,10 @@ typedef struct
 #define SCB_DFSR_HALTED_Pos                 0U                                            /*!< SCB DFSR: HALTED Position */
 #define SCB_DFSR_HALTED_Msk                (1UL /*<< SCB_DFSR_HALTED_Pos*/)               /*!< SCB DFSR: HALTED Mask */
 
+/* SCB Coprocessor Access Control Register Definitions */
+#define SCB_CPACR_CPn_Pos(n)               ((n) * 2U)                                     /*!< SCB CPACR: CP Position */
+#define SCB_CPACR_CPn_Msk(n)               (3UL << SCB_CPACR_CPn_Pos(n))                  /*!< SCB CPACR: CP Mask */
+
 /*@} end of group CMSIS_SCB */
 
 
